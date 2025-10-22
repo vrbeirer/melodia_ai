@@ -5,6 +5,8 @@ import random
 import os
 from midiutil import MIDIFile
 import pickle
+from io import BytesIO
+
 
 # Deep Learning imports
 try:
@@ -321,28 +323,25 @@ def generate():
         print("⚠ Using fallback generation method")
         midi = generate_melody_fallback(tempo, scale_type)
     
+    # Generate filename
     filename = f"melody_{random.randint(1000, 9999)}.mid"
-    filepath = os.path.join("static", filename)
     
-    os.makedirs("static", exist_ok=True)
-    
-    with open(filepath, "wb") as output_file:
-        midi.writeFile(output_file)
+    # Save to BytesIO instead of disk
+    from io import BytesIO
+    midi_bytes = BytesIO()
+    midi.writeFile(midi_bytes)
+    midi_bytes.seek(0)
     
     insight = random.choice(INSIGHTS)
     recommendation = random.choice([m["mood"] for m in MOODS])
     
-    return jsonify({
-        "file": f"static/{filename}",
-        "insight": insight,
-        "recommendation": recommendation,
-        "model_used": "LSTM Deep Learning" if music_lstm and music_lstm.model else "Algorithmic",
-        "parameters": {
-            "tempo": tempo,
-            "creativity": creativity,
-            "length": length
-        }
-    })
+    # Return the file directly
+    return send_file(
+        midi_bytes,
+        mimetype='audio/midi',
+        as_attachment=True,
+        download_name=filename
+    )
 
 
 
@@ -386,4 +385,5 @@ if __name__ == '__main__':
     print(" • /generate → Generate melody")
     print("=" * 60)
     app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+
 
