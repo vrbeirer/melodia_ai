@@ -1027,7 +1027,7 @@ input[type="range"]::-ms-track {
         async function fetchSuggestions() {
             console.log('Fetching suggestions...');
             try {
-                const response = await fetch('http://127.0.0.1:5000/suggest');
+                const response = await fetch('/suggest');
                 console.log('Response:', response);
                 
                 if (!response.ok) {
@@ -1168,7 +1168,7 @@ input[type="range"]::-ms-track {
                     requestBody.scale = selectedMood.scale;
                 }
                 
-                const response = await fetch('http://127.0.0.1:5000/generate', {
+                const response = await fetch('/generate', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1179,7 +1179,7 @@ input[type="range"]::-ms-track {
                 const data = await response.json();
                 
                 // Store audio URL
-                currentAudioUrl = 'http://127.0.0.1:5000/' + data.file;
+                currentAudioUrl = '/' + data.file;
                 
                 // Update insights
                 document.getElementById('insightText').textContent = data.insight;
@@ -1307,7 +1307,7 @@ input[type="range"]::-ms-track {
                 <div class="history-name">${historyItem.name}</div>
             `;
             item.onclick = () => {
-                currentAudioUrl = 'http://127.0.0.1:5000/' + historyItem.url;
+                currentAudioUrl = '/' + historyItem.url;
                 document.getElementById('insightText').textContent = historyItem.insight;
                 stopMelody();
                 createWaveform(false);
