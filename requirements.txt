@@ -1,5 +1,7 @@
 Flask==3.0.0
-tensorflow==2.15.0
-numpy==1.24.3
-music21==9.1.0
-gunicorn==21.2.0
+tensorflow>=2.16.0
+numpy>=1.24.0
+music21>=9.1.0
+gunicorn>=21.0.0
+flask-cors>=4.0.0
+midiutil>=1.2.0
