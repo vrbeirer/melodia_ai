@@ -223,27 +223,38 @@ if DEEP_LEARNING_AVAILABLE:
 
 
 def generate_melody_lstm(tempo=80, num_notes=64):
-    """Generate melody using LSTM model"""
+    """Generate melody using LSTM model with timeout protection"""
     if music_lstm and music_lstm.model:
-        temperature = random.uniform(0.8, 1.2)
-        notes = music_lstm.generate_notes(num_notes, temperature)
-        
-        midi = MIDIFile(1)
-        track = 0
-        channel = 0
-        time = 0
-        midi.addTempo(track, time, tempo)
-        
-        volume = 100
-        
-        for note in notes:
-            duration = random.choice([0.5, 1.0, 1.5])
-            midi.addNote(track, channel, note, time, duration, volume)
-            time += duration
-        
-        return midi
+        try:
+            # Limit notes to prevent timeout
+            num_notes = min(num_notes, 48)  # Reduce max notes
+            
+            temperature = random.uniform(0.8, 1.2)
+            notes = music_lstm.generate_notes(num_notes, temperature)
+            
+            if notes is None:
+                return None
+            
+            midi = MIDIFile(1)
+            track = 0
+            channel = 0
+            time = 0
+            midi.addTempo(track, time, tempo)
+            
+            volume = 100
+            
+            for note in notes:
+                duration = random.choice([0.5, 1.0, 1.5])
+                midi.addNote(track, channel, note, time, duration, volume)
+                time += duration
+            
+            return midi
+        except Exception as e:
+            print(f"LSTM generation failed: {e}")
+            return None
     else:
         return None
+
 
 
 def generate_melody_fallback(tempo=80, scale_type="major"):
@@ -310,15 +321,21 @@ def generate():
     data = request.get_json() or {}
     tempo = data.get('tempo', random.choice([60, 80, 100, 120]))
     creativity = data.get('creativity', 1.0)
-    length = data.get('length', 64)
+    length = data.get('length', 48)  # Reduced from 64 to prevent timeout
+    
+    # Limit length to prevent memory issues
+    length = min(length, 48)
     
     mood = random.choice(MOODS)
     scale_type = mood["scale"]
     
-    # Try LSTM generation with custom parameters
-    midi = generate_melody_lstm(tempo, length)
+    # Try LSTM generation with timeout protection
+    try:
+        midi = generate_melody_lstm(tempo, length)
+    except:
+        midi = None
     
-    # Fallback to algorithmic generation
+    # Fallback to algorithmic generation if LSTM fails
     if midi is None:
         print("⚠ Using fallback generation method")
         midi = generate_melody_fallback(tempo, scale_type)
@@ -327,13 +344,9 @@ def generate():
     filename = f"melody_{random.randint(1000, 9999)}.mid"
     
     # Save to BytesIO instead of disk
-    from io import BytesIO
     midi_bytes = BytesIO()
     midi.writeFile(midi_bytes)
     midi_bytes.seek(0)
-    
-    insight = random.choice(INSIGHTS)
-    recommendation = random.choice([m["mood"] for m in MOODS])
     
     # Return the file directly
     return send_file(
@@ -342,7 +355,6 @@ def generate():
         as_attachment=True,
         download_name=filename
     )
-
 
 
 @app.route('/static/<filename>')
@@ -385,5 +397,6 @@ if __name__ == '__main__':
     print(" • /generate → Generate melody")
     print("=" * 60)
     app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+
 
 
