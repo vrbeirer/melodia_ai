@@ -1138,7 +1138,7 @@ input[type="range"]::-ms-track {
             }
         }
 
-        // Generate melody
+// Generate melody
 // Generate melody
 async function generateMelody() {
     const generateBtn = document.getElementById('generateBtn');
@@ -1197,8 +1197,10 @@ async function generateMelody() {
             }
         }
         
-        // Store audio URL for playback
+        // Store for playback and download
         currentAudioUrl = blobURL;
+        window.currentMelodyBlob = blobURL;
+        window.currentMelodyFilename = filename;
         
         // Update insights (using mock data since backend returns file directly)
         const insights = [
@@ -1220,19 +1222,11 @@ async function generateMelody() {
         createWaveform(false);
         updatePlaybackStatus('Ready');
         
-        // Auto-download the file
-        const tempLink = document.createElement('a');
-        tempLink.style.display = 'none';
-        tempLink.href = blobURL;
-        tempLink.download = filename;
-        document.body.appendChild(tempLink);
-        tempLink.click();
-        document.body.removeChild(tempLink);
-        
         // Add to history
         addToHistory({
             time: new Date().toLocaleTimeString(),
             url: blobURL,
+            filename: filename,
             insight: document.getElementById('insightText').textContent
         });
         
@@ -1255,11 +1249,6 @@ async function generateMelody() {
             });
         }, 2000);
         
-        // Clean up blob URL after some time
-        setTimeout(() => {
-            window.URL.revokeObjectURL(blobURL);
-        }, 60000); // Clean up after 1 minute
-        
     } catch (error) {
         console.error('Error generating melody:', error);
         loading.classList.remove('active');
@@ -1268,6 +1257,7 @@ async function generateMelody() {
         alert('Error generating melody. Please ensure the Flask server is running.');
     }
 }
+
 
 
         // Play melody
@@ -1305,16 +1295,21 @@ async function generateMelody() {
         }
 
         // Download melody
-        function downloadMelody() {
-            if (currentAudioUrl) {
-                const a = document.createElement('a');
-                a.href = currentAudioUrl;
-                a.download = `harmonia-ai-melody-${Date.now()}.mid`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            }
-        }
+        // Download melody function
+function downloadMelody() {
+    if (window.currentMelodyBlob && window.currentMelodyFilename) {
+        const tempLink = document.createElement('a');
+        tempLink.style.display = 'none';
+        tempLink.href = window.currentMelodyBlob;
+        tempLink.download = window.currentMelodyFilename;
+        document.body.appendChild(tempLink);
+        tempLink.click();
+        document.body.removeChild(tempLink);
+    } else {
+        alert('Please generate a melody first!');
+    }
+}
+
 
         // Share melody
         function shareMelody() {
